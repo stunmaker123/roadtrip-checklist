@@ -1186,14 +1186,53 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 revealEls.forEach(el => observer.observe(el));
 
-// === CHECKLIST TOGGLE ===
-let totalItems = document.querySelectorAll('.check-item').length;
+// === FIREBASE PERSISTENT SHARED CHECKLIST ===
+// 🔧 REPLACE THIS with your Firebase config after creating a free project at console.firebase.google.com
+const FIREBASE_URL = 'https://germany-to-syria-default-rtdb.firebaseio.com/'; // e.g. https://roadtrip-xxxxx-default-rtdb.firebaseio.com
 
-function toggle(el) {
-  el.classList.toggle('checked');
+const totalItems = document.querySelectorAll('.check-item').length;
+let state = {}; // { "item-0": true, "item-3": true, ... }
+let syncing = false;
+
+// Assign stable IDs to every check item
+document.querySelectorAll('.check-item').forEach((el, i) => {
+  el.dataset.itemId = 'item-' + i;
+});
+
+// --- Status indicator ---
+const statusDot = document.createElement('div');
+statusDot.id = 'syncStatus';
+statusDot.style.cssText = `
+  position: fixed; bottom: 1.5rem; left: 1.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(232,213,176,0.4); z-index: 200;
+  transition: opacity 0.5s;
+`;
+statusDot.innerHTML = `<span id="syncDot" style="width:6px;height:6px;border-radius:50%;background:#555;display:inline-block;transition:background 0.3s;"></span><span id="syncLabel">Connecting…</span>`;
+document.body.appendChild(statusDot);
+
+function setStatus(type) {
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if (type === 'live')   { dot.style.background = '#2d6b5a'; label.textContent = 'Live · Shared'; }
+  if (type === 'saving') { dot.style.background = '#c8922a'; label.textContent = 'Saving…'; }
+  if (type === 'error')  { dot.style.background = '#8b3a1a'; label.textContent = 'Offline'; }
+}
+
+// --- Apply state to DOM ---
+function applyState(data) {
+  state = data || {};
+  document.querySelectorAll('.check-item').forEach(el => {
+    const id = el.dataset.itemId;
+    if (state[id]) el.classList.add('checked');
+    else el.classList.remove('checked');
+  });
   updateProgress();
 }
 
+// --- Update progress ring ---
 function updateProgress() {
   const checked = document.querySelectorAll('.check-item.checked').length;
   const pct = Math.round((checked / totalItems) * 100);
@@ -1206,10 +1245,81 @@ function updateProgress() {
   }
 }
 
-function resetAll() {
+// --- Toggle: write single item to Firebase ---
+async function toggle(el) {
+  const id = el.dataset.itemId;
+  const newVal = !el.classList.contains('checked');
+  // Optimistic UI
+  if (newVal) el.classList.add('checked'); else el.classList.remove('checked');
+  updateProgress();
+  setStatus('saving');
+  try {
+    await fetch(`${FIREBASE_URL}/checklist/${id}.json`, {
+      method: 'PUT',
+      body: JSON.stringify(newVal)
+    });
+    setStatus('live');
+  } catch(e) {
+    setStatus('error');
+  }
+}
+
+// --- Reset all ---
+async function resetAll() {
   document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
   updateProgress();
+  setStatus('saving');
+  try {
+    await fetch(`${FIREBASE_URL}/checklist.json`, {
+      method: 'PUT',
+      body: JSON.stringify({})
+    });
+    setStatus('live');
+  } catch(e) { setStatus('error'); }
 }
+
+// --- Real-time listener via Firebase SSE ---
+function startListener() {
+  if (!FIREBASE_URL || FIREBASE_URL === 'YOUR_FIREBASE_DATABASE_URL') {
+    setStatus('error');
+    document.getElementById('syncLabel').textContent = 'Add Firebase URL';
+    return;
+  }
+  const es = new EventSource(`${FIREBASE_URL}/checklist.json`);
+  es.addEventListener('put', e => {
+    const msg = JSON.parse(e.data);
+    if (msg.path === '/') {
+      applyState(msg.data);
+    } else {
+      // Single item update from another user
+      const key = msg.path.replace('/', '');
+      state[key] = msg.data;
+      applyState(state);
+    }
+    setStatus('live');
+  });
+  es.onerror = () => setStatus('error');
+}
+
+// --- Boot: load current state then listen ---
+async function init() {
+  if (!FIREBASE_URL || FIREBASE_URL === 'YOUR_FIREBASE_DATABASE_URL') {
+    setStatus('error');
+    document.getElementById('syncLabel').textContent = 'Add Firebase URL';
+    return;
+  }
+  try {
+    const res = await fetch(`${FIREBASE_URL}/checklist.json`);
+    const data = await res.json();
+    applyState(data);
+    setStatus('live');
+    startListener();
+  } catch(e) {
+    setStatus('error');
+  }
+}
+
+init();
 
 // === NAV ===
 const sections = ['hero', 'docs', 'car', 'gear', 'internet', 'money'];

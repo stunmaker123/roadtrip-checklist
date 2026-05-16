@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Germany → Syria Road Trip</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Tajawal:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #e8d5b0;
+    --amber: #c8922a;
+    --deep: #1a0f02;
+    --rust: #8b3a1a;
+    --sky: #4a7fa5;
+    --oasis: #2d6b5a;
+    --gold: #f0c060;
+    --cream: #fdf6e8;
+    --smoke: rgba(255,255,255,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--deep);
+    color: var(--sand);
+    font-family: 'Tajawal', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--gold);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, width 0.3s, height 0.3s, background 0.3s;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease-out, width 0.3s, height 0.3s;
+    opacity: 0.5;
+  }
+
+  /* === HERO === */
+  .hero {
+    height: 100vh;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* 3D canvas bg */
+  #bgCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .route-badge {
+    display: inline-block;
+    background: rgba(200,146,42,0.15);
+    border: 1px solid rgba(200,146,42,0.4);
+    color: var(--gold);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 0.4rem 1.2rem;
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+    animation: fadeInDown 1s ease forwards;
+    opacity: 0;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    animation: fadeInUp 1.2s 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  .hero h1 .line1 { color: var(--cream); display: block; }
+  .hero h1 .line2 {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--amber);
+    display: block;
+  }
+  .hero h1 .line3 { color: var(--gold); display: block; font-style: italic; }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    color: rgba(232,213,176,0.6);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: fadeInUp 1.2s 0.6s ease forwards;
+    opacity: 0;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(232,213,176,0.4);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    animation: fadeIn 2s 1.5s ease forwards;
+    opacity: 0;
+    z-index: 2;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--amber), transparent);
+    animation: scrollDrop 2s 2s ease-in-out infinite;
+  }
+
+  /* === PROGRESS BAR === */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--rust), var(--amber), var(--gold));
+    z-index: 1000;
+    transition: width 0.1s;
+  }
+
+  /* === NAV === */
+  .nav {
+    position: fixed;
+    top: 1.5rem; right: 2rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+  }
+  .nav-item:hover, .nav-item.active { opacity: 1; }
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+    transition: width 0.3s;
+  }
+  .nav-item.active .nav-dot { width: 20px; border-radius: 3px; }
+  .nav-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--sand);
+  }
+
+  /* === SECTIONS === */
+  .section {
+    position: relative;
+    z-index: 2;
+    padding: 6rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .section-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(200,146,42,0.3);
+    line-height: 1;
+  }
+  .section-title-wrap {}
+  .section-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 0.3rem;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    color: var(--cream);
+    font-weight: 700;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--amber), transparent);
+    margin-bottom: 2.5rem;
+  }
+
+  /* === CHECKLIST === */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.9rem 1.2rem;
+    background: var(--smoke);
+    border: 1px solid rgba(232,213,176,0.06);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.25s, border-color 0.25s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .check-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--amber);
+    transform: scaleY(0);
+    transition: transform 0.3s;
+    transform-origin: bottom;
+  }
+  .check-item:hover {
+    background: rgba(200,146,42,0.08);
+    border-color: rgba(200,146,42,0.2);
+    transform: translateX(4px);
+  }
+  .check-item:hover::before,
+  .check-item.checked::before { transform: scaleY(1); }
+  .check-item.checked {
+    background: rgba(45,107,90,0.15);
+    border-color: rgba(45,107,90,0.3);
+  }
+
+  .checkbox {
+    width: 20px; height: 20px;
+    border: 1.5px solid rgba(200,146,42,0.5);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .check-item.checked .checkbox {
+    background: var(--oasis);
+    border-color: var(--oasis);
+  }
+  .checkmark {
+    opacity: 0;
+    transform: scale(0) rotate(-10deg);
+    transition: opacity 0.2s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    color: white;
+    font-size: 12px;
+  }
+  .check-item.checked .checkmark {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+
+  .check-text {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--sand);
+    transition: color 0.2s;
+  }
+  .check-item.checked .check-text {
+    color: rgba(232,213,176,0.45);
+    text-decoration: line-through;
+    text-decoration-color: rgba(45,107,90,0.6);
+  }
+
+  .check-tag {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .tag-urgent { background: rgba(139,58,26,0.4); color: #e8a080; border: 1px solid rgba(139,58,26,0.5); }
+  .tag-gear { background: rgba(74,127,165,0.25); color: #90c4e0; border: 1px solid rgba(74,127,165,0.3); }
+  .tag-doc { background: rgba(200,146,42,0.2); color: var(--gold); border: 1px solid rgba(200,146,42,0.3); }
+  .tag-net { background: rgba(45,107,90,0.3); color: #80d0b8; border: 1px solid rgba(45,107,90,0.4); }
+  .tag-cash { background: rgba(240,192,96,0.15); color: var(--gold); border: 1px solid rgba(240,192,96,0.25); }
+  .tag-tip { background: rgba(150,100,200,0.2); color: #c8a0e8; border: 1px solid rgba(150,100,200,0.3); }
+
+  /* === PROGRESS RING === */
+  .progress-section {
+    position: sticky;
+    top: 2rem;
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 2rem;
+    max-width: 900px;
+    margin: 0 auto -5rem;
+    pointer-events: none;
+  }
+  .ring-wrap {
+    background: rgba(26,15,2,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(200,146,42,0.2);
+    border-radius: 50%;
+    padding: 0.5rem;
+    pointer-events: auto;
+  }
+  svg.ring { transform: rotate(-90deg); }
+  .ring-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .ring-pct {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    display: block;
+  }
+  .ring-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(232,213,176,0.5);
+  }
+  .ring-container {
+    position: relative;
+    width: 80px; height: 80px;
+  }
+
+  /* === INTERNET BOX === */
+  .info-card {
+    background: rgba(74,127,165,0.08);
+    border: 1px solid rgba(74,127,165,0.25);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .info-card::after {
+    content: '📡';
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 3rem;
+    opacity: 0.15;
+  }
+  .info-card h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--sky);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .info-card p {
+    font-size: 0.875rem;
+    color: rgba(232,213,176,0.7);
+    line-height: 1.6;
+  }
+
+  /* === ROUTE TIMELINE === */
+  .route-line {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 3rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .route-stop {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+  }
+  .stop-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--amber);
+    border: 2px solid var(--deep);
+    outline: 1px solid var(--amber);
+  }
+  .stop-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sand);
+    white-space: nowrap;
+    padding: 0 0.5rem;
+  }
+  .route-dash {
+    width: 40px; height: 1px;
+    background: linear-gradient(90deg, var(--amber), rgba(200,146,42,0.3));
+    flex-shrink: 0;
+  }
+
+  /* === FOOTER === */
+  .footer {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 4rem 2rem;
+    border-top: 1px solid rgba(232,213,176,0.08);
+    color: rgba(232,213,176,0.3);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+  }
+
+  /* === ANIMATIONS === */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scrollDrop {
+    0%, 100% { transform: scaleY(0); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Floating particles */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 50%;
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    from { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.5; }
+    to { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* Reset all button */
+  .reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: 1px solid rgba(200,146,42,0.3);
+    color: var(--amber);
+    padding: 0.6rem 1.2rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 2rem;
+    transition: background 0.2s, color 0.2s;
+  }
+  .reset-btn:hover { background: rgba(200,146,42,0.1); color: var(--gold); }
+
+  /* Celebration */
+  .celebration {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(26,15,2,0.95);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    padding: 3rem;
+    text-align: center;
+    z-index: 500;
+    display: none;
+    backdrop-filter: blur(20px);
+    animation: fadeIn 0.5s ease;
+  }
+  .celebration.show { display: block; }
+  .celebration h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+  .celebration p { color: var(--sand); font-size: 0.9rem; opacity: 0.7; }
+  .close-cel {
+    margin-top: 1.5rem;
+    background: var(--amber);
+    color: var(--deep);
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Nav dots -->
+<nav class="nav" id="mainNav">
+  <div class="nav-item active" data-section="hero"><span class="nav-label">Top</span><div class="nav-dot"></div></div>
+  <div class="nav-item" data-section="docs"><span class="nav-label">Documents</span><div class="nav-dot"></div></div>
+  <div class="nav-item" data-section="car"><span class="nav-label">Car</span><div class="nav-dot"></div></div>
+  <div class="nav-item" data-section="gear"><span class="nav-label">Gear</span><div class="nav-dot"></div></div>
+  <div class="nav-item" data-section="internet"><span class="nav-label">Internet</span><div class="nav-dot"></div></div>
+  <div class="nav-item" data-section="money"><span class="nav-label">Money</span><div class="nav-dot"></div></div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <div class="route-badge">Epic Overland Journey 2026</div>
+    <h1>
+      <span class="line1">Germany</span>
+      <span class="line2">to</span>
+      <span class="line3">Syria</span>
+    </h1>
+    <p class="hero-sub">~4,500 km · Road Trip Checklist</p>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- Route Timeline -->
+<div class="section reveal" style="padding-top: 2rem; padding-bottom: 2rem;">
+  <div class="route-line">
+    <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">Gelsenkirchen</span></div>
+    <div class="route-dash"></div>
+    <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">Austria</span></div>
+    <div class="route-dash"></div>
+    <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">Bulgaria</span></div>
+    <div class="route-dash"></div>
+    <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">Turkey</span></div>
+    <div class="route-dash"></div>
+    <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">Syria 🏡</span></div>
+  </div>
+</div>
+
+<!-- Progress ring sticky -->
+<div class="progress-section">
+  <div class="ring-wrap">
+    <div class="ring-container">
+      <svg class="ring" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(200,146,42,0.15)" stroke-width="4"/>
+        <circle id="ringProgress" cx="40" cy="40" r="32" fill="none" stroke="url(#ringGrad)" stroke-width="4"
+          stroke-dasharray="201" stroke-dashoffset="201" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#8b3a1a"/>
+            <stop offset="100%" stop-color="#f0c060"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="ring-text">
+        <span class="ring-pct" id="ringPct">0%</span>
+        <span class="ring-label">Done</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 1: Documents -->
+<section class="section" id="docs">
+  <div class="reveal">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div class="section-title-wrap">
+        <div class="section-eyebrow">Before You Leave</div>
+        <div class="section-title">Documents & Admin</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+  </div>
+  <div class="checklist reveal">
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Both passports valid — German passport (EU border + Turkey) and Syrian passport (Syria entry)</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">International Driving Permit (IDP) — get from ADAC in Germany</div>
+      <span class="check-tag tag-doc">Doc</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Vehicle registration (Fahrzeugschein) — original, not a copy</div>
+      <span class="check-tag tag-doc">Doc</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Green Card insurance — confirm it covers Turkey; check Syria coverage with insurer</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Travel insurance covering Syria — check IATI (most others exclude Syria)</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Carnet de Passage — check with ADAC if required for Syria entry with German-plated car</div>
+      <span class="check-tag tag-doc">Doc</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Photocopies + digital scans of all documents — store in cloud and USB stick</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Check German Foreign Office (Auswärtiges Amt) Syria travel advisory before departure</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Emergency contacts list — embassy numbers, family, mechanic contacts in Syria</div>
+      <span class="check-tag tag-doc">Doc</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: Car Prep -->
+<section class="section" id="car">
+  <div class="reveal">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div class="section-title-wrap">
+        <div class="section-eyebrow">Mechanical</div>
+        <div class="section-title">Car Preparation</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+  </div>
+  <div class="checklist reveal">
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">New tyres — all four, check pressure for load + heat (inflate slightly above normal for highway)</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Full-size spare tyre (not space-saver) — essential for remote Turkey/Syria stretches</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Tyre repair kit — plugs, patches, portable compressor (12V)</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Oil change — fresh oil + extra 1L same grade in the car</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Air compressor (12V) — for tyre pressure management on the road</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Jump starter / portable battery booster</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Extra coolant/antifreeze — summer heat in Turkey and Syria is extreme</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Spare engine belts, hoses, fuses, bulbs</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Jerry can (10–20L spare fuel) — fuel availability can be patchy in rural Syria</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Windscreen repair kit — long highway drives = inevitable stone chips</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Tow rope / recovery strap</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Basic tool kit — wrenches, screwdrivers, pliers, zip ties, duct tape, wire</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Fire extinguisher (required in several countries along the route)</div>
+      <span class="check-tag tag-doc">Legal</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Warning triangles x2 + high-visibility vests (legally required in EU and Turkey)</div>
+      <span class="check-tag tag-doc">Legal</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Dashcam — essential for insurance disputes at foreign borders</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Folding shovel — for sand or getting unstuck in rough terrain</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: Comfort & Gear -->
+<section class="section" id="gear">
+  <div class="reveal">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div class="section-title-wrap">
+        <div class="section-eyebrow">Comfort & Supplies</div>
+        <div class="section-title">Travel Gear</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+  </div>
+  <div class="checklist reveal">
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Roof cage with anti-weather cover + ratchet tie-down straps</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Padlocks for roof cage — secure your gear at border stops</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Seat cushion / lumbar support — your back will thank you after 10+ hour days</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Window sun covers — crucial in Turkey and Syria; cockpit temps can hit 60°C</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Portable cooler / fridge (12V) — keep water and food cold in the heat</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">300W+ car inverter (12V to 230V) — for Starlink, laptop, camera charging</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Large water containers (min 10L reserve) + water purification tablets</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Power bank 20,000+ mAh — for phones during driving hours</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Portable solar panel — pairs with power bank for off-grid charging</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Comprehensive first aid kit — antibiotics, anti-diarrhea, painkillers, bandages, antiseptic</div>
+      <span class="check-tag tag-urgent">Urgent</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">High SPF sunscreen — Syrian summer sun is intense</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Mosquito repellent (DEET-based) — especially for evenings near rivers</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Head torch + spare batteries</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Multi-tool / Swiss Army knife</div>
+      <span class="check-tag tag-gear">Gear</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Paper maps of Turkey + Syria (offline backup; don't rely solely on phone GPS)</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Offline maps downloaded — Maps.me or OsmAnd with Turkey and Syria</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: Internet -->
+<section class="section" id="internet">
+  <div class="reveal">
+    <div class="section-header">
+      <div class="section-number">04</div>
+      <div class="section-title-wrap">
+        <div class="section-eyebrow">Connectivity</div>
+        <div class="section-title">Internet & Communication</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+  </div>
+  <div class="info-card reveal">
+    <h3>Starlink Roaming Plan — Your Setup</h3>
+    <p>Buy and activate in Germany → enable Portability/Roaming plan → works all the way through Austria, Bulgaria, Turkey. In Syria, you're going home — your call. Needs a clear sky view and your 300W+ inverter to run.</p>
+  </div>
+  <div class="checklist reveal">
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Buy Starlink kit in Germany — activate Roaming/Portability plan before leaving</div>
+      <span class="check-tag tag-net">Internet</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Starlink flat mount or kick stand for roof cage — needs clear sky view above</div>
+      <span class="check-tag tag-net">Internet</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Download Starlink app — check coverage maps for Turkey and Syria before each day</div>
+      <span class="check-tag tag-net">Internet</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Syrian tourist SIM ($45 USD, 15 GB) — buy at border or Damascus; local backup internet</div>
+      <span class="check-tag tag-net">Internet</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Turkish SIM or EU roaming confirmed — for the Turkey leg of the drive</div>
+      <span class="check-tag tag-net">Internet</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Important content downloaded offline — maps, music, shows, navigation for dead zones</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: Money -->
+<section class="section" id="money">
+  <div class="reveal">
+    <div class="section-header">
+      <div class="section-number">05</div>
+      <div class="section-title-wrap">
+        <div class="section-eyebrow">Finance</div>
+        <div class="section-title">Money & Cash</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+  </div>
+  <div class="checklist reveal">
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">USD cash — primary currency in Syria; ATMs non-operational. Bring plenty</div>
+      <span class="check-tag tag-cash">Cash</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Euros for the European and Turkish legs (Turkey also accepts EUR widely)</div>
+      <span class="check-tag tag-cash">Cash</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Split cash between multiple locations in the car — never keep it all in one bag</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Notify your German bank of travel dates to prevent card blocks (useful in Turkey)</div>
+      <span class="check-tag tag-tip">Tip</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Syria visa fee at border — $75 USD (EU passport) — have exact change ready</div>
+      <span class="check-tag tag-cash">Cash</span>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="check-text">Budget for fuel — Syria fuel ~$1.16/liter. Set aside cash for the whole route</div>
+      <span class="check-tag tag-cash">Cash</span>
+    </div>
+  </div>
+  <div style="text-align:center;">
+    <button class="reset-btn" onclick="resetAll()">↺ Reset All Checkboxes</button>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="footer">
+  <p>Safe travels · رحلة آمنة · Gelsenkirchen → Damascus</p>
+</div>
+
+<!-- Celebration -->
+<div class="celebration" id="celebration">
+  <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+  <h2>All Packed!</h2>
+  <p>You're ready for the road.<br>Safe travels to Syria! رحلة آمنة</p>
+  <button class="close-cel" onclick="document.getElementById('celebration').classList.remove('show')">Let's Go!</button>
+</div>
+
+<script>
+// === 3D CANVAS BACKGROUND ===
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, stars = [], scrollY = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function initStars() {
+  stars = [];
+  const count = Math.floor((W * H) / 6000);
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      z: Math.random() * 3 + 0.5,
+      size: Math.random() * 1.5 + 0.3,
+      speed: Math.random() * 0.3 + 0.05,
+      hue: Math.random() > 0.8 ? 38 : 200,
+      opacity: Math.random() * 0.8 + 0.2,
+    });
+  }
+}
+
+// Desert dune shapes
+const dunes = Array.from({length: 5}, (_, i) => ({
+  phase: Math.random() * Math.PI * 2,
+  speed: 0.0002 + i * 0.00005,
+  y: 0.5 + i * 0.1,
+  amplitude: 40 + i * 20,
+  color: `rgba(${80 + i*15}, ${45 + i*10}, ${10 + i*5}, 0.15)`,
+}));
+
+let time = 0;
+function drawBg() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Deep gradient bg
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#080400');
+  grad.addColorStop(0.5, '#100800');
+  grad.addColorStop(1, '#1a0f02');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Atmospheric glow
+  const scrollFrac = Math.min(scrollY / (document.body.scrollHeight - H), 1);
+  const glowX = W * (0.3 + scrollFrac * 0.4);
+  const glowY = H * 0.4;
+  const glow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, W * 0.6);
+  glow.addColorStop(0, `rgba(200,146,42,${0.04 + scrollFrac * 0.03})`);
+  glow.addColorStop(0.4, `rgba(139,58,26,0.02)`);
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  stars.forEach(s => {
+    const parallax = (scrollY * s.speed * 0.5) % H;
+    const sy = (s.y + parallax) % H;
+    ctx.beginPath();
+    ctx.arc(s.x, sy, s.size, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${s.hue}, 60%, 80%, ${s.opacity * (0.5 + Math.sin(time * s.speed * 10 + s.phase) * 0.3)})`;
+    ctx.fill();
+  });
+
+  // Animated dunes
+  dunes.forEach((d, i) => {
+    const prlx = scrollY * (0.03 + i * 0.01);
+    const baseY = H * d.y + prlx;
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 5) {
+      const y = baseY + Math.sin((x / W) * Math.PI * 3 + d.phase + time * d.speed * 1000) * d.amplitude;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fillStyle = d.color;
+    ctx.fill();
+  });
+
+  // Grid lines (subtle)
+  ctx.strokeStyle = 'rgba(200,146,42,0.025)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 80) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+
+  time += 0.016;
+}
+
+function animate() {
+  drawBg();
+  requestAnimationFrame(animate);
+}
+
+resize();
+initStars();
+animate();
+window.addEventListener('resize', () => { resize(); initStars(); });
+
+// === SCROLL ===
+window.addEventListener('scroll', () => {
+  scrollY = window.scrollY;
+  const total = document.body.scrollHeight - window.innerHeight;
+  const pct = scrollY / total;
+  document.getElementById('progressBar').style.width = (pct * 100) + '%';
+  updateNav();
+});
+
+// === CURSOR ===
+const curEl = document.getElementById('cursor');
+const ringEl = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  curEl.style.left = mx + 'px'; curEl.style.top = my + 'px';
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  ringEl.style.left = rx + 'px'; ringEl.style.top = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+document.querySelectorAll('.check-item').forEach(el => {
+  el.addEventListener('mouseenter', () => { curEl.style.width = '20px'; curEl.style.height = '20px'; });
+  el.addEventListener('mouseleave', () => { curEl.style.width = '12px'; curEl.style.height = '12px'; });
+});
+
+// === REVEAL ON SCROLL ===
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), 100);
+    }
+  });
+}, { threshold: 0.1 });
+revealEls.forEach(el => observer.observe(el));
+
+// === CHECKLIST TOGGLE ===
+let totalItems = document.querySelectorAll('.check-item').length;
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  updateProgress();
+}
+
+function updateProgress() {
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const pct = Math.round((checked / totalItems) * 100);
+  const circumference = 201;
+  const offset = circumference - (pct / 100) * circumference;
+  document.getElementById('ringProgress').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = pct + '%';
+  if (pct === 100) {
+    setTimeout(() => document.getElementById('celebration').classList.add('show'), 500);
+  }
+}
+
+function resetAll() {
+  document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
+  updateProgress();
+}
+
+// === NAV ===
+const sections = ['hero', 'docs', 'car', 'gear', 'internet', 'money'];
+function updateNav() {
+  let current = 'hero';
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.scrollY >= el.offsetTop - 200) current = id;
+  });
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.section === current);
+  });
+}
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    const target = document.getElementById(el.dataset.section);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// === FLOATING PARTICLES ===
+function spawnParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 3 + 1;
+  const left = Math.random() * 100;
+  const duration = Math.random() * 15 + 10;
+  const delay = Math.random() * 5;
+  const hue = Math.random() > 0.6 ? 38 : 200;
+  p.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${left}%;
+    background: hsla(${hue}, 60%, 70%, 0.6);
+    animation-duration: ${duration}s;
+    animation-delay: ${delay}s;
+  `;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), (duration + delay) * 1000);
+}
+setInterval(spawnParticle, 800);
+</script>
+</body>
+</html>

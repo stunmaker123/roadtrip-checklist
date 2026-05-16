@@ -408,13 +408,49 @@
   }
 
   /* === ROUTE TIMELINE === */
+  .route-line-wrap {
+    position: relative;
+    margin-bottom: 3rem;
+  }
+  .route-line-wrap::before,
+  .route-line-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 16px;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .route-line-wrap::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--deep), transparent);
+  }
+  .route-line-wrap::after {
+    right: 0;
+    background: linear-gradient(270deg, var(--deep), transparent);
+  }
   .route-line {
     display: flex;
     align-items: center;
     gap: 0;
-    margin-bottom: 3rem;
     overflow-x: auto;
-    padding-bottom: 0.5rem;
+    padding-bottom: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--amber) rgba(200,146,42,0.08);
+  }
+  .route-line::-webkit-scrollbar {
+    height: 3px;
+  }
+  .route-line::-webkit-scrollbar-track {
+    background: rgba(200,146,42,0.08);
+    border-radius: 2px;
+  }
+  .route-line::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, var(--rust), var(--amber), var(--gold));
+    border-radius: 2px;
+  }
+  .route-line::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
   }
   .route-stop {
     display: flex;
@@ -591,6 +627,7 @@
 
 <!-- Route Timeline -->
 <div class="section reveal" style="padding-top: 2rem; padding-bottom: 2rem;">
+  <div class="route-line-wrap">
   <div class="route-line">
     <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">🏠 Gelsenkirchen</span></div>
     <div class="route-dash"></div>
@@ -611,6 +648,7 @@
     <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">Gaziantep</span></div>
     <div class="route-dash"></div>
     <div class="route-stop"><div class="stop-dot"></div><span class="stop-label">🏡 Syria</span></div>
+  </div>
   </div>
 </div>
 
